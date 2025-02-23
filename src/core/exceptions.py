@@ -1,0 +1,1 @@
+class InvalidID(Exception): pass
