@@ -1,4 +1,12 @@
 {
+    "agent": {
+        "name": "0xVenta Agent",
+        "author": "0xVenta Labs",
+        "environment": {
+            "model_provider": "groq",
+            "model_name": "llama3-8b-8192"
+        }
+    },
     "character": "./character.json",
     "database": {
         "mongodb": {
@@ -6,5 +14,34 @@
             "database": "oxventa"
         }
     },
+    "client": {
+        "telegram": {
+            "key": "7767224085:AAHdbaaTe586X0mGms__0l4tCwKAwGIeNWM",
+            "is_activate": true,
+            "parse_mode": "Markdown"
+        }
+    },
+    "chains": {
+        "bsc": {
+            "rpc": null
+        },
+        "hardhat": {
+            "chainId": 31337,
+            "rpc": "http://localhost:7545"
+        }
+    },
+    "contracts": [
+        {
+            "chainId": 31337,
+            "uniswap_v2": {
+                "router": "",
+                "factory": "",
+                "init_code_hash": ""
+            }
+        }
+    ],
+    "plugins": [
+        "plugins/oxventa-wallet"
+    ],
     "secret_key": "b665a7839a585853e2cf961a689c81c7d5242ad8917313cd09baef216dfc4b9c"
 }
