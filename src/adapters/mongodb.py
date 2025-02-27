@@ -7,16 +7,16 @@ from src.core.types import Conversations
 from src.core.types import Users
 from src.core.types import Wallet
 from src.core.logger import console
+from src.core.types import AgentRuntimeAbstract
 from src.core.exceptions import InvalidID
 
 class MongoAdapter(MongoAdapterAbstract):
-    def __init__(self, settings: Settings, client: MongoClient):
-        super().__init__(settings, client)
+    def __init__(self, runtime: AgentRuntimeAbstract, client: MongoClient = None):
+        super().__init__(runtime, client)
 
     def init(self):
         if self.client is None:
-            database_settings = self.settings.database
-            database_url = database_settings.mongodb.url
+            database_url = self.runtime.get_setting("database.mongodb.url")
 
             try:
                 self.client = MongoClient(
@@ -35,11 +35,12 @@ class MongoAdapter(MongoAdapterAbstract):
     def close(self):
         if self.is_connected is True:
             self.client.close()
+            self.is_connected = False
 
     def initialize_database(self):
         default_database_name = "agents"
 
-        database_name = self.settings.database.mongodb.database
+        database_name = self.runtime.get_setting("database.mongodb.database")
         if not database_name:
             console.warn(f"No database name found, set to `{default_database_name}`")
             database_name = default_database_name
