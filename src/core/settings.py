@@ -12,7 +12,7 @@ class SettingsManager:
 
     def load_settings(self):
         if os.path.isfile(self.setting_file_path):
-            console.info("Loading settings configuration")
+            console.info("Loading settings configuration...")
             with open(self.setting_file_path, "r") as File:
                 try:
                     settings_raw_data = File.read()
