@@ -1,10 +1,12 @@
 import binascii
+import threading
 from uuid import UUID
 from typing import Literal
+from typing import Callable
 from pydantic import BaseModel
 from pymongo import MongoClient
 from pymongo.synchronous.database import Database
-
+from src.core.worker import WorkerThread
 from src.crypto.aes import AESCipher
 
 # Database Types
@@ -16,9 +18,25 @@ class MongoDatabase(BaseModel):
 class SettingDatabase(BaseModel):
     mongodb: MongoDatabase
 
+class SettingTelegramClient(BaseModel):
+    key: str
+    is_activate: bool
+    parse_mode: str
+    
+class SettingClient(BaseModel):
+    telegram: SettingTelegramClient
+
+class SettingAgent(BaseModel):
+    name: str
+    author: str
+    environment: dict
+
 class Settings(BaseModel):
+    agent: SettingAgent
     character: str
     database: SettingDatabase
+    client: SettingClient
+    plugins: list[str]
     secret_key: str
 
 # Character Types
@@ -73,6 +91,12 @@ class Conversations(BaseModel):
             return str(self.uuid)
         return self.uuid
 
+class PluginMetadata(BaseModel):
+    name: str
+    author: str
+    version: float | str
+    license: str
+
 # Wallet Types
 class Wallet(BaseModel):
     uuid: UUID
@@ -117,15 +141,53 @@ class MongoAdapterUserAbstract:
     def get_user_wallets(self, user_id: UUID): ...
     def get_user_wallet(self, user_id: UUID, wallet_id: UUID): ...
     def get_user_wallet_address(self, user_id: UUID, wallet_address: str): ...
+    
+class PluginManagerAbstract:
+    def __init__(self, runtime: any):
+        self.runtime: AgentRuntimeAbstract = runtime
+        self.plugins: list[Callable]
+        self.plugins_metadata: list[PluginMetadata]
+        self.cwd: str
+
+    def load_plugins(self): ...
+    def load_metadata(self, metadata_path: str): ...
+    def from_path_to_module(self, plugin_path: str): ...
+    def initialize_plugin(self, plugin_path: str): ...
+    def call_all_plugins(self): ...
+    def print_informative_plugins(self): ...
+
+class AgentRuntimeAbstract:
+    def __init__(
+        self,
+        character: Character,
+        settings: Settings
+    ):
+        self.character: Character = character
+        self.settings: Settings = settings
+        self.database_adapter: str
+        self.stop_polling: threading.Event
+    
+        self.worker: WorkerThread
+
+        self.agent: AgentAbstract = None
+
+        self.plugins: PluginManagerAbstract = None
+
+    def init(self): ...
+    def get_setting(self, key: str): ...
+    def set_agent(self, agent): ...
+    def set_database_adapter(self, adapter: MongoClient): ...
+    def start(self): ...
+    def stop(self): ...
 
 class MongoAdapterAbstract(MongoAdapterConversationAbstract, MongoAdapterUserAbstract):
     def __init__(
         self,
-        settings: Settings,
-        client: MongoClient
+        runtime: AgentRuntimeAbstract,
+        client: MongoClient = None
     ):
         self.client: MongoClient = client
-        self.settings: Settings = settings
+        self.runtime: AgentRuntimeAbstract = runtime
 
         self.database: Database = None
         self.is_connected: bool = False
@@ -136,12 +198,11 @@ class MongoAdapterAbstract(MongoAdapterConversationAbstract, MongoAdapterUserAbs
     def initialize_collections(self): ...
     def ensure_connection(self): ...
     
-class AgentRuntimeAbstract:
-    def __init__(
-        self,
-        character: Character,
-        settings: Settings
-    ):
-        self.character: Character = character
-        self.settings: Settings = settings
-        self.database_adapter: str
+class AgentAbstract:
+    def __init__(self, runtime: AgentRuntimeAbstract):
+        self.runtime: AgentRuntimeAbstract = runtime
+        self.plugins: list = []
+
+    def init(self): ...
+    def register(self): ...
+    def execute(self, input: str): ...
