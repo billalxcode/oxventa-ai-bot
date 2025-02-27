@@ -12,7 +12,7 @@ class CharacterManager:
         
     def load_character(self):
         if os.path.isfile(self.character_file_path):
-            console.info("Loading a character configuration")
+            console.info("Loading a character configuration...")
             with open(self.character_file_path, "r") as File:
                 try:
                     character_raw_data = File.read()
