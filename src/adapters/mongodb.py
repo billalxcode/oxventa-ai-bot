@@ -9,10 +9,12 @@ from src.core.types import Wallet
 from src.core.logger import console
 from src.core.types import AgentRuntimeAbstract
 from src.core.exceptions import InvalidID
-
+from src.adapters.users import UserAdapter
 class MongoAdapter(MongoAdapterAbstract):
     def __init__(self, runtime: AgentRuntimeAbstract, client: MongoClient = None):
         super().__init__(runtime, client)
+        
+        self.user = UserAdapter(self)
 
     def init(self):
         if self.client is None:
@@ -112,16 +114,7 @@ class MongoAdapter(MongoAdapterAbstract):
             return None
         
     # ============ User Functions ============= #
-    def create_user(self, user_data: Users):
-        self.ensure_connection()
-        try:
-            self.database.get_collection("users").insert_one(
-                user_data.model_dump()
-            )
-            return True
-        except Exception as e:
-            console.error(f"Error creating a user: {e}")
-            return False
+    
     
     def create_wallet(self, user_id: UUID, wallet: Wallet):
         if isinstance(user_id, str):
