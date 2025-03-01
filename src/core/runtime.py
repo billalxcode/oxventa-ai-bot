@@ -6,9 +6,11 @@ from src.core.settings import Settings
 from src.core.types import MongoAdapterAbstract
 from src.core.types import AgentRuntimeAbstract
 from src.core.types import AgentAbstract
+from src.core.types import ToolsManagerAbstract
 from src.core.types import PluginManagerAbstract
 from src.core.worker import WorkerThread
 from src.core.plugin import PluginManager
+from src.core.tools import ToolsManager
 from src.clients.telegram import Telegram
 from src.clients.types import TelegramAbstract
 
@@ -29,9 +31,13 @@ class AgentRuntime(AgentRuntimeAbstract):
 
         self.agent: AgentAbstract = None
         self.plugins: PluginManagerAbstract = None
+        self.tools: ToolsManagerAbstract = None
 
     def init(self):
         self.telegram_client = Telegram(self)
+        self.tools: ToolsManagerAbstract = ToolsManager(
+            self
+        )
 
         self.plugins: PluginManagerAbstract = PluginManager(
             self
@@ -63,10 +69,19 @@ class AgentRuntime(AgentRuntimeAbstract):
 
     def start(self):
         self.start_client()
-        self.worker.start()
 
         self.plugins.call_all_plugins()
         self.plugins.print_informative_plugins()
+
+        self.tools.build()
+        self.tools.print_informative_tools()
+
+        self.agent.initialize_prompt()
+        self.agent.start_agent()
+
+        self.telegram_client.register_handlers()
+        self.worker.start()
+
         with console.status(f"[magenta](time)[/magenta] App now running") as status:
             while self.worker.running:
                 try:
