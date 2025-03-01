@@ -4,6 +4,7 @@ from telebot.types import Message
 from src.core.logger import console
 from src.clients.types import TelegramAbstract
 from src.core.types import AgentRuntimeAbstract
+from src.utils.convert_to_uuid import convert_to_uuid
 
 class Telegram(TelegramAbstract):
     def __init__(self, runtime: AgentRuntimeAbstract):
@@ -34,16 +35,14 @@ class Telegram(TelegramAbstract):
             console.error("No telegram client key, please check your configuration")
             console.exit()
 
-        self.register_handlers()
-
     def register_handlers(self):
         console.info("Registering all telegram handlers")
         self.bot.register_message_handler(
-            callback=lambda x: self.handle_start_message(x),
+            callback=lambda msg: self.handle_start_message(msg),
             commands=["start", "help"]
         )
         self.bot.register_message_handler(
-            callback=lambda x: self.handle_new_message(x)
+            callback=lambda msg: self.handle_new_message(msg)
         )
     
     def ensure_connection(self):
@@ -80,23 +79,32 @@ class Telegram(TelegramAbstract):
 
         console.info(f"New message: {message_text}")
 
+        user_id = convert_to_uuid(message.from_user.id)
+        user_exists = self.runtime.database_adapter.user.exists_user(user_id=user_id)
+        if user_exists is False:
+            self.bot.reply_to(message=message, text="You are not yet registered on this platform, please type /register to register.")
+            return False
+
         temporary_message_wait_moment = self.bot.reply_to(message=message, text=f"👀 Agent is running, wait a moment...")
-        response = self.runtime.agent.execute(message_text)
+        # self.runtime.agent.execute(message_text, message=message)
+
         self.bot.delete_message(
             chat_id=temporary_message_wait_moment.chat.id,
             message_id=temporary_message_wait_moment.message_id
         )
-        self.bot.reply_to(
+
+    def reply_to(self, message: Message, text: str):
+        message_return = self.bot.reply_to(
             message=message,
-            text=response,
+            text=text
         )
+        return message_return
 
     def handle_start_message(self, message: Message):
         message_text = message.text
 
         console.info(f"New message: {message_text}")
         self.bot.send_message(message.chat.id, "Pongggg")
-
 
     def start(self):
         console.info("Starting telegram client")
