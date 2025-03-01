@@ -1,11 +1,18 @@
 import binascii
 import threading
 from uuid import UUID
+from datetime import datetime
 from typing import Literal
 from typing import Callable
+from typing import Optional
 from pydantic import BaseModel
+from pydantic import EmailStr
+from pydantic import Field
 from pymongo import MongoClient
 from pymongo.synchronous.database import Database
+from langchain.tools import StructuredTool
+from telebot.types import Message
+
 from src.core.worker import WorkerThread
 from src.crypto.aes import AESCipher
 
@@ -74,6 +81,37 @@ class Character(BaseModel):
     knowledge: dict[str, list[str]] | None
     conversations: list[CharacterConversationsGroup] | None
 
+    def build_knowledge(self):
+        knowledge_strings = []
+        for key, values in self.knowledge.items():
+            knowledge_string = f"{key}: {', '.join(values)}"
+            knowledge_strings.append(knowledge_string)
+        return '\n'.join(knowledge_strings)
+
+    def build_communication_style(self):
+        return f"""
+🗣 Tone
+{self.style.tone.capitalize()}
+📡 Communication Style
+{self.style.communication.capitalize()}
+💡 Emphasis
+{self.style.emphasis.capitalize()}
+😏 Emotion
+{self.style.emotion.capitalize()}
+🔥 Attitude
+{self.style.attitude.capitalize()}
+        """
+    
+    def build_lore(self):
+        return f"""
+📍 Background
+{self.lore.background.capitalize()}
+🎯 Mission
+{self.lore.mission.capitalize()}
+🚀 Current Role
+{self.lore.current_role.capitalize()}
+"""
+    
 class ConversationMessages(BaseModel):
     content: str
     timestamp: str
@@ -120,27 +158,31 @@ class Wallet(BaseModel):
         return encrypted_private_key
 
 class Users(BaseModel):
-    uuid: UUID
-    fullname: str
-    username: str
-    wallets: list[Wallet]
-    created_at: str
-    updated_at: str
+    uuid: UUID                      = Field(...)
+    email: EmailStr                 = Field(...)
+    username: str                   = Field(...)
+    first_name: Optional[str]       = Field(default=None)
+    last_name: Optional[str]        = Field(default=None)
+    created_at: datetime            = Field(default_factory=datetime.now)
+    updated_at: datetime            = Field(default_factory=datetime.now)
 
+    @property
+    def full_name(self):
+        full_name = self.first_name
+        if self.last_name:
+            full_name += f" {self.last_name}"
+        return full_name
+
+    def before_save(self):
+        self.updated_at = datetime.now()
+        return self
+    
 class MongoAdapterConversationAbstract:
     def create_conversation(self, conversation_data: Conversations): ...
     def get_conversation(self, conversation_id: UUID): ...
     def get_conversations_for_user(self, user_id: UUID): ...
     def get_first_conversation_for_user(self, user_id: UUID): ...
     def x(self, x2: str): ...
-    
-class MongoAdapterUserAbstract:
-    def create_user(self, user_data: Users): ...
-    def create_wallet(self, user_id: UUID, wallet: Wallet): ...
-    def get_user(self, user_id: UUID): ...
-    def get_user_wallets(self, user_id: UUID): ...
-    def get_user_wallet(self, user_id: UUID, wallet_id: UUID): ...
-    def get_user_wallet_address(self, user_id: UUID, wallet_address: str): ...
     
 class PluginManagerAbstract:
     def __init__(self, runtime: any):
@@ -156,6 +198,28 @@ class PluginManagerAbstract:
     def call_all_plugins(self): ...
     def print_informative_plugins(self): ...
 
+class PluginTool:
+    def __init__(self, runtime: any):
+        self.runtime: AgentRuntimeAbstract
+        self.name: str
+        self.description: str
+        self.schema: BaseModel
+
+    def init(self): ...
+    def call(self, arg: str, message: Message): ...
+
+class ToolsManagerAbstract:
+    def __init__(self, runtime: any):
+        self.runtime: AgentRuntimeAbstract
+        self.tools: list[PluginTool]
+        self.tools_binding: list[StructuredTool]
+        self.message: Message
+    
+    def register(self, tool: PluginTool): ...
+    def build(self): ...
+    def print_informative_tools(self): ...
+    def update_message(self, message: Message): ...
+
 class AgentRuntimeAbstract:
     def __init__(
         self,
@@ -164,15 +228,18 @@ class AgentRuntimeAbstract:
     ):
         self.character: Character = character
         self.settings: Settings = settings
-        self.database_adapter: str
+        self.database_adapter: MongoAdapterAbstract
         self.stop_polling: threading.Event
     
+        self.telegram_client
+        
         self.worker: WorkerThread
 
         self.agent: AgentAbstract = None
 
         self.plugins: PluginManagerAbstract = None
-
+        self.tools: ToolsManagerAbstract = None
+        
     def init(self): ...
     def get_setting(self, key: str): ...
     def set_agent(self, agent): ...
@@ -180,7 +247,16 @@ class AgentRuntimeAbstract:
     def start(self): ...
     def stop(self): ...
 
-class MongoAdapterAbstract(MongoAdapterConversationAbstract, MongoAdapterUserAbstract):
+class UserAdapterAbstract:
+    def create_user(self, user_data: Users): ...
+    def create_wallet(self, user_id: UUID, wallet: Wallet): ...
+    def get_user(self, user_id: UUID): ...
+    def get_user_wallets(self, user_id: UUID): ...
+    def get_user_wallet(self, user_id: UUID, wallet_id: UUID): ...
+    def get_user_wallet_address(self, user_id: UUID, wallet_address: str): ...
+    def exists_user(self, user_id: UUID): ...
+    
+class MongoAdapterAbstract(MongoAdapterConversationAbstract):
     def __init__(
         self,
         runtime: AgentRuntimeAbstract,
@@ -188,6 +264,8 @@ class MongoAdapterAbstract(MongoAdapterConversationAbstract, MongoAdapterUserAbs
     ):
         self.client: MongoClient = client
         self.runtime: AgentRuntimeAbstract = runtime
+
+        self.user: UserAdapterAbstract
 
         self.database: Database = None
         self.is_connected: bool = False
@@ -205,4 +283,6 @@ class AgentAbstract:
 
     def init(self): ...
     def register(self): ...
-    def execute(self, input: str): ...
+    def initialize_prompt(self): ...
+    def execute(self, input: str, message: Message): ...
+    def start_agent(self): ...
