@@ -10,11 +10,14 @@ from src.core.logger import console
 from src.core.types import AgentRuntimeAbstract
 from src.core.exceptions import InvalidID
 from src.adapters.users import UserAdapter
+from src.adapters.wallets import WalletAdapter
+
 class MongoAdapter(MongoAdapterAbstract):
     def __init__(self, runtime: AgentRuntimeAbstract, client: MongoClient = None):
         super().__init__(runtime, client)
         
         self.user = UserAdapter(self)
+        self.wallet = WalletAdapter(self)
 
     def init(self):
         if self.client is None:
@@ -112,31 +115,6 @@ class MongoAdapter(MongoAdapterAbstract):
             return conversations[0]
         else:
             return None
-        
-    # ============ User Functions ============= #
-    
-    
-    def create_wallet(self, user_id: UUID, wallet: Wallet):
-        if isinstance(user_id, str):
-            try:
-                user_id = UUID(user_id)
-            except Exception as e:
-                raise InvalidID("Invalid user id")
-        wallets = self.get_user_wallets(user_id=user_id)
-        wallets.append(wallet.model_dump())
-        try:
-            self.database.get_collection("users").update_one({
-                "uuid": user_id
-            }, {
-                "$set": {
-                    "wallets": wallets,
-                    "updated_at": str(datetime.now())
-                }
-            })
-            return True
-        except Exception as e:
-            console.error(f"Failed to update users: {e}")
-            return False
         
     def get_user(self, user_id: Users):
         self.ensure_connection()
