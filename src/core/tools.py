@@ -27,7 +27,7 @@ class ToolsManager(ToolsManagerAbstract):
             console.info(f"Building tool: {tool.name}")
             tool_for_binding = StructuredTool(
                 name=tool.name,
-                func=partial(tool.call, message=self.message),
+                func=lambda **kwargs: tool.call(**kwargs, message=self.message),
                 description=tool.description,
                 args_schema=tool.schema
             )
