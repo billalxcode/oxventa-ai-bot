@@ -86,7 +86,7 @@ class Telegram(TelegramAbstract):
             return False
 
         temporary_message_wait_moment = self.bot.reply_to(message=message, text=f"👀 Agent is running, wait a moment...")
-        # self.runtime.agent.execute(message_text, message=message)
+        self.runtime.agent.execute(message_text, message=message)
 
         self.bot.delete_message(
             chat_id=temporary_message_wait_moment.chat.id,
