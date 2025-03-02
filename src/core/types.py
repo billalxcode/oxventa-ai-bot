@@ -12,6 +12,9 @@ from pymongo import MongoClient
 from pymongo.synchronous.database import Database
 from langchain.tools import StructuredTool
 from telebot.types import Message
+from eth_account import Account
+from eth_account.signers.local import LocalAccount
+from solders.keypair import Keypair
 
 from src.core.worker import WorkerThread
 from src.crypto.aes import AESCipher
@@ -137,26 +140,26 @@ class PluginMetadata(BaseModel):
 
 # Wallet Types
 class Wallet(BaseModel):
-    uuid: UUID
-    address: str
-    encrypted_private_key: str = ""
-    wallet_type: Literal["evm", "solana", "other"]
+    uuid: UUID = Field(...)
+    user_uuid: UUID = Field(...)
+    address: str = Field(...)
+    wallet_type: Literal["evm", "solana"] = Field(...)
+    extra: dict = Field(default_factory=dict)
 
-    def unlock_private_key(self, encryption_key: str):
-        encryption_key_bytes = binascii.unhexlify(encryption_key)
-        aes = AESCipher(encryption_key_bytes)
-        private_key = aes.decrypt(self.encrypted_private_key)
-        return private_key
+    def get_private_key(self, secret: str):
+        if self.wallet_type == "solana":
+            raise NotImplementedError
+        account: LocalAccount = Account.decrypt(self.extra, password=secret)
+        return account.key
+
+    def fill_extra(self, private_key: str, secret: str):
+        if self.wallet_type == "solana":
+            raise NotImplementedError
+        account: LocalAccount = Account.from_key(private_key)
+        account_encrypted = account.encrypt(password=secret)
+        self.extra = account_encrypted
+        return self
     
-    def lock_private_key(self, encryption_key: str, private_key: str):
-        encryption_key_bytes = binascii.unhexlify(encryption_key)
-        aes = AESCipher(encryption_key_bytes)
-        encrypted_private_key = aes.encrypt(private_key)
-
-        self.encrypted_private_key = encrypted_private_key
-        
-        return encrypted_private_key
-
 class Users(BaseModel):
     uuid: UUID                      = Field(...)
     email: EmailStr                 = Field(...)
@@ -249,13 +252,12 @@ class AgentRuntimeAbstract:
 
 class UserAdapterAbstract:
     def create_user(self, user_data: Users): ...
-    def create_wallet(self, user_id: UUID, wallet: Wallet): ...
     def get_user(self, user_id: UUID): ...
-    def get_user_wallets(self, user_id: UUID): ...
-    def get_user_wallet(self, user_id: UUID, wallet_id: UUID): ...
-    def get_user_wallet_address(self, user_id: UUID, wallet_address: str): ...
     def exists_user(self, user_id: UUID): ...
     
+class WalletAdapterAbstract:
+    def create_wallet(self, wallet_data: Wallet): ...
+
 class MongoAdapterAbstract(MongoAdapterConversationAbstract):
     def __init__(
         self,
@@ -266,6 +268,7 @@ class MongoAdapterAbstract(MongoAdapterConversationAbstract):
         self.runtime: AgentRuntimeAbstract = runtime
 
         self.user: UserAdapterAbstract
+        self.wallet: WalletAdapterAbstract
 
         self.database: Database = None
         self.is_connected: bool = False
