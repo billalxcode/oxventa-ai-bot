@@ -2,9 +2,10 @@ from uuid import UUID
 from src.core.logger import console
 from src.core.types import MongoAdapterAbstract
 from src.core.types import Users
+from src.core.types import UserAdapterAbstract
 from src.core.exceptions import InvalidID
 
-class UserAdapter:
+class UserAdapter(UserAdapterAbstract):
     def __init__(self, db: MongoAdapterAbstract):
         self.db: MongoAdapterAbstract = db
 
