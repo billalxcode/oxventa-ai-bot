@@ -11,6 +11,7 @@ from src.core.types import AgentRuntimeAbstract
 from src.core.exceptions import InvalidID
 from src.adapters.users import UserAdapter
 from src.adapters.wallets import WalletAdapter
+from src.adapters.brokers import BrokerAdapter
 
 class MongoAdapter(MongoAdapterAbstract):
     def __init__(self, runtime: AgentRuntimeAbstract, client: MongoClient = None):
@@ -18,7 +19,8 @@ class MongoAdapter(MongoAdapterAbstract):
         
         self.user = UserAdapter(self)
         self.wallet = WalletAdapter(self)
-
+        self.broker = BrokerAdapter(self)
+        
     def init(self):
         if self.client is None:
             database_url = self.runtime.get_setting("database.mongodb.url")
@@ -56,7 +58,8 @@ class MongoAdapter(MongoAdapterAbstract):
             "memories",
             "conversations",
             "accounts",
-            "wallets"
+            "wallets",
+            "brokers"
         ]
         console.info("Initialize all database collections")
         for collection in collections:
