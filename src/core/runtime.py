@@ -13,6 +13,8 @@ from src.core.plugin import PluginManager
 from src.core.tools import ToolsManager
 from src.clients.telegram import Telegram
 from src.clients.types import TelegramAbstract
+from src.chains.manager import ChainsManager
+from src.chains.types import ChainsManagerAbstract
 
 class AgentRuntime(AgentRuntimeAbstract):
     def __init__(
@@ -24,6 +26,8 @@ class AgentRuntime(AgentRuntimeAbstract):
         self.settings: Settings = settings
         self.database_adapter: MongoAdapterAbstract = None
         self.stop_polling = threading.Event()
+
+        self.chains: ChainsManagerAbstract = ChainsManager()
 
         self.telegram_client: TelegramAbstract = None
         
@@ -43,6 +47,8 @@ class AgentRuntime(AgentRuntimeAbstract):
             self
         )
 
+        self.chains.register_chains()
+        
         self.worker = WorkerThread(
             "Runtime",
             target=self.telegram_client.start,
@@ -59,9 +65,13 @@ class AgentRuntime(AgentRuntimeAbstract):
         keys = key.split('.')
         value = self.settings
         for k in keys:
-            value = getattr(value, k, None)
-            if value is None:
-                break
+            if k.isdigit():
+                k = int(k)
+                value = value[k] if isinstance(value, list) and 0 <= k < len(value) else None
+            else:
+                value = getattr(value, k, None)
+                if value is None:
+                    break
         return value
     
     def start_client(self):
@@ -81,6 +91,8 @@ class AgentRuntime(AgentRuntimeAbstract):
 
         self.telegram_client.register_handlers()
         self.worker.start()
+
+        console.print(self.telegram_client.bot.callback_query_handlers)
 
         with console.status(f"[magenta](time)[/magenta] App now running") as status:
             while self.worker.running:
