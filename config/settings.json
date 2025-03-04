@@ -30,18 +30,18 @@
             "rpc": "http://localhost:7545"
         }
     },
-    "contracts": [
-        {
-            "chainId": 31337,
-            "uniswap_v2": {
-                "router": "",
-                "factory": "",
-                "init_code_hash": ""
-            }
+    "contracts": {
+        "hardhat": {
+            "uniswap_v2_router": "0xCf7Ed3AccA5a467e9e704C703E8D87F634fB0Fc9",
+            "uniswap_v2_factory": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
+            "uniswap_v2_init_code_hash": "0x53723e4e3f283ad6da1a958aca530d8e28cb7491424adfd3b77f8620878f06f1",
+            "wrapped_token": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
+            "token_factory": "0x5FC8d32690cc91D4c39d9d3abcBD16989F875707"
         }
-    ],
+    },
     "plugins": [
-        "plugins/oxventa_auth"
+        "plugins/oxventa_auth",
+        "plugins/oxventa_token_factory"
     ],
     "secret_key": "b665a7839a585853e2cf961a689c81c7d5242ad8917313cd09baef216dfc4b9c"
 }
