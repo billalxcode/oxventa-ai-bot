@@ -58,6 +58,7 @@ If someone asks an off-topic question, then answer naturally that you can't answ
 Make sure the parameters you send to the tool are JSON!
 If there are any other questions related to the topic and yourself, make sure you answer naturally and without using tools!
 Make sure your response is short, clear, and natural.
+Answer questions naturally, making sure that the questions and answers do not go off topic. If the user does not provide arguments or parameters for the tool, make sure to indicate that the arguments or parameters must be filled in.
 """
         self.prompt = character_prompt
     
