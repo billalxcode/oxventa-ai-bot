@@ -13,12 +13,6 @@ from src.utils.convert_to_uuid import convert_to_uuid
 from plugins.oxventa_token_factory.tools.token_factory import TokenFactoryTool
 from plugins.oxventa_token_factory.functions.token_factory import TokenFactoryExecutor
 
-class ConfirmTransactionFilter(AdvancedCustomFilter):
-    key = "config"
-
-    def check(self, call: CallbackQuery, config: CallbackDataFilter):
-        return config.check(query=call)
-    
 class TokenFactory:
     def __init__(self, runtime: AgentRuntimeAbstract):
         self.runtime: AgentRuntimeAbstract = runtime
