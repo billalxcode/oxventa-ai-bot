@@ -41,7 +41,8 @@
     },
     "plugins": [
         "plugins/oxventa_auth",
-        "plugins/oxventa_token_factory"
+        "plugins/oxventa_token_factory",
+        "plugins/oxventa_uniswapv2"
     ],
     "secret_key": "b665a7839a585853e2cf961a689c81c7d5242ad8917313cd09baef216dfc4b9c"
 }
