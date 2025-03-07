@@ -23,11 +23,10 @@ class BrokerAdapter(BrokerAdapterAbstract):
     def get_message(self, publisher: str):
         self.db.ensure_connection()
 
-        message = self.db.database.get_collection("brokers").find_one({
+        message = self.db.database.get_collection("brokers").find_one_and_delete({
             "publisher": publisher
         })
         if message:
-            # self.remove_message_by_publisher(message["publisher"])
             return BrokerMessage(**message)
         return None
     
