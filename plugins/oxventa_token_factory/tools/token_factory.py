@@ -38,15 +38,20 @@ class TokenFactoryTool(PluginTool):
         self.name = "token-factory"
         self.schema = TokenFactorySchema
         self.description = """
-Users can create or deploy tokens using token factory, it supports evm networks such as ethereum, base, and hardhat. 
+Users can create or deploy new tokens using the Token Factory. This feature supports EVM-based networks such as Ethereum, BSC, and Hardhat, but does not support the Solana network.
 
-It does not currently support the solana network
-- Users must enter the token name, token symbol or ticker, and the initial supply of the token.
-- If the user does not enter detailed information, then leave the value blank.
-- Users can select parameter options on the network namely ethereum, bsc, and hardhat. If the user does not fill in the network arguments or parameters, it automatically fills in the hardhat network.
-- Make sure you change the numeric notation for the total supply into numeric units? For example, 1k is 1000, or 1m is 1000000. Make sure that the value of the total supply is in units.
-
-If the argument or parameter is incomplete, then indicate that the argument is incomplete.
+Requirements:
+1. Users must enter:
+    - Token Name
+	- Token Symbol (Ticker)
+	- Initial Supply as a numeric value.
+2. If the user does not provide detailed information, leave the values blank.
+3. Users can choose the network: Ethereum, BSC, or Hardhat.
+    - Default: If no network is specified, default to Hardhat.
+4. Numeric Notation Conversion:
+    - Convert shorthand notations like 1k to 1000 or 1m to 1000000.
+    - Ensure the total supply value is in valid numeric units.
+5. If any required parameters or arguments are missing, display a message indicating that the parameters are incomplete.
 """
         self.client: TelegramAbstract = self.runtime.telegram_client
 
@@ -125,8 +130,11 @@ Please check the detailed data at the time of token creation.
 🔹 Token symbol or ticker:
 {token_symbol}
 
-🔹Initial Supply:
+🔹 Initial Supply:
 {initial_supply}
+
+🔹 Network
+{network}
 
 Make sure the information provided by the AI matches what you provide.
 """,
