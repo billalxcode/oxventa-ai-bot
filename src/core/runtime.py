@@ -92,8 +92,9 @@ class AgentRuntime(AgentRuntimeAbstract):
         self.telegram_client.register_handlers()
         self.worker.start()
 
-        console.print(self.telegram_client.bot.callback_query_handlers)
-
+        console.print(
+            self.get_setting("contracts")["hardhat"]
+        )
         with console.status(f"[magenta](time)[/magenta] App now running") as status:
             while self.worker.running:
                 try:
