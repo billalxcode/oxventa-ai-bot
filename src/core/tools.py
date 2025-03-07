@@ -27,12 +27,12 @@ class ToolsManager(ToolsManagerAbstract):
             console.info(f"Building tool: {tool.name}")
             tool_for_binding = StructuredTool(
                 name=tool.name,
-                func=lambda **kwargs: tool.call(**kwargs, message=self.message),
+                func=(lambda tool=tool: lambda **kwargs: tool.call(**kwargs, message=self.message))(),
                 description=tool.description,
                 args_schema=tool.schema
             )
             tool_for_binding.model_dump()
             self.tools_binding.append(tool_for_binding)
-
+        
     def print_informative_tools(self):
         return super().print_informative_tools()
