@@ -80,7 +80,8 @@ class CreatePairExecutor:
                 create_pair_tx_hash = chain.send_raw_transaction(
                     signed_transaction.raw_transaction
                 )
-                return create_pair_tx_hash.hex()
+                pair_address = get_pair_function.call()
+                return create_pair_tx_hash.hex(), pair_address
             except Exception as e:
                 console.print_exception()
                 return False
@@ -109,7 +110,7 @@ class CreatePairExecutor:
         )
 
         try:
-            transaction_hash = self.create_pair(token_address=token_address, chain=chain, account=account)
+            transaction_hash, pair_address = self.create_pair(token_address=token_address, chain=chain, account=account)
             self.client.bot.reply_to(
                 message=call.message,
                 text="Transaction has been sent. Please wait a moment, your transaction is waiting for confirmation from the network..."
@@ -131,6 +132,9 @@ Here are the transaction details
 
 ✨ Contract address
 `{token_address}`
+
+🔗 Token Pair address
+`{pair_address}`
 
 💰 Gas used
 `{transaction_gas_used}` WEI
