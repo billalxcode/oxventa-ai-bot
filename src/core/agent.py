@@ -65,10 +65,12 @@ Answer questions naturally, making sure that the questions and answers do not go
     def start_agent(self):
         console.info("Binding tools with the agent")
         tools = self.runtime.tools
+        
         self.agent = create_react_agent(
             model=self.model,
             tools=tools.tools_binding,
-            prompt=self.prompt
+            prompt=self.prompt,
+            # checkpointer=
         )
     
     def execute(self, input: str, message: Message):
