@@ -147,11 +147,13 @@ Here are the transaction details
 """,
                 parse_mode="markdown"
             )
+            return True
         except InsufficientBalance:
             self.client.bot.reply_to(
                 message=call.message,
                 text="❌ Insufficient balance to create the token."
             )
+            return False
         except AlreadyTokenPair as e:
             self.client.bot.reply_to(
                 message=call.message,
@@ -165,3 +167,4 @@ You cannot create a pair address anymore.
 """,
                 parse_mode="markdown"
             )
+            return False
